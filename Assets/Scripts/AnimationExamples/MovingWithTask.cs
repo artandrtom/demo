@@ -16,5 +16,7 @@ namespace DefaultNamespace.AnimationExamples
                 await Task.Yield();
             }
         }
+        
+        //struct Delay()
     }
 }

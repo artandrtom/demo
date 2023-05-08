@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading;
+using System.Threading.Tasks;
 using UnityEngine;
 
 namespace DefaultNamespace.AnimationExamples
@@ -27,8 +28,19 @@ namespace DefaultNamespace.AnimationExamples
             {
                 await _objects[i].Move(0f, (float)(i + 1)/2, 10 + i);
             }
+            
             _finish.SetActive(true);
         }
+
+        /*private async void TestException()
+        {
+
+        }
+
+        private async Task TestExceptionTask()
+        {
+
+        }*/
         
         private void Cancel()
         {

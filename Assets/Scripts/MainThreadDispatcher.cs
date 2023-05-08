@@ -9,7 +9,7 @@ namespace DefaultNamespace
     {
         private static MainThreadDispatcher _instance;
 
-        private List<Action> _actions;
+        private List<Action> _actions = new List<Action>();
         
         private void Awake()
         {

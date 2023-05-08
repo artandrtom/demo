@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using DefaultNamespace;
+using DefaultNamespace.WebRequests;
 using Newtonsoft.Json;
 using UnityEngine;
 
@@ -18,16 +20,14 @@ namespace Networking.Webhooks
         private const string SuccessResponse = "{\r\n  \"success\": true\r\n}";
         private const string FailedResponse = "{\r\n  \"success\": false\r\n}";
 
-        private readonly Dictionary<string, Func<HttpListenerRequest, Task<bool>>> _handlers;
+        private readonly Dictionary<string, Func<HttpListenerRequest, HttpListenerResponse, Task<bool>>> _handlers;
         
         public WebhooksListener()
         {
-            _handlers = new Dictionary<string, Func<HttpListenerRequest, Task<bool>>>
+            _handlers = new Dictionary<string, Func<HttpListenerRequest, HttpListenerResponse, Task<bool>>>
             {
                 { "/banUser", HandleUserBanRequest },
-                { "/scheduleChanged", HandleScheduleChangedRequest },
-                { "/resourcesChanged", HandleSharedResourcesChangedRequest },
-                { "/chestGamesChanged", HandleChestGamesChangedRequest}
+                { "/getUserData", HandleGetUserDataRequest },
             };
         }
         
@@ -65,26 +65,13 @@ namespace Networking.Webhooks
                     // Peel out the requests and response objects
                     var req = ctx.Request;
                     var resp = ctx.Response;
-                    
-                    byte[] data;
-                    bool success = await HandleRequest(req).ConfigureAwait(false);
-                    if (success)
-                    {
-                        data = Encoding.UTF8.GetBytes(SuccessResponse);
-                        resp.StatusCode = 200;
-                    }
-                    else
-                    {
-                        data = Encoding.UTF8.GetBytes(FailedResponse);
-                        resp.StatusCode = 421;
-                    }
-                    
-                    resp.ContentType = "application/json";
-                    resp.ContentEncoding = Encoding.UTF8;
-                    resp.ContentLength64 = data.LongLength;
 
-                    // Write out to the response stream (asynchronously), then close it
-                    await resp.OutputStream.WriteAsync(data, 0, data.Length).ConfigureAwait(false);
+                    var handled = await HandleRequest(req, resp).ConfigureAwait(false);
+                    if (!handled)
+                    {
+                        await FailResponse(resp).ConfigureAwait(false);
+                    }
+                    
                     resp.Close();
                 }
             }
@@ -99,50 +86,52 @@ namespace Networking.Webhooks
             }
         }
         
-        private async Task<bool> HandleRequest(HttpListenerRequest req)
+        private async Task<bool> HandleRequest(HttpListenerRequest req, HttpListenerResponse res)
         {
             if (!_handlers.TryGetValue(req.Url.AbsolutePath, out var handler)) return false;
-            var result = await handler(req).ConfigureAwait(false);
+            var result = await handler(req, res).ConfigureAwait(false);
             return result;
         }
 
-        private async Task<bool> HandleUserBanRequest(HttpListenerRequest req)
+        public event Action<string> OnBanUser;
+        
+        private async Task<bool> HandleUserBanRequest(HttpListenerRequest req, HttpListenerResponse res)
         {
             if (!req.QueryString.HasKeys()) return false;
             var userId = req.QueryString.Get("id");
             if (string.IsNullOrEmpty(userId)) return false;
             Debug.Log($"Received webhook to kick banned user: {userId}");
-            await Task.CompletedTask;
-            //MainThreadDispatcher.Post((action) => _signalBus.Fire(new UserBannedWebhookSignal { uid = userId }), this);
+            MainThreadDispatcher.Post(() => OnBanUser?.Invoke(userId));
+            
+            await OkResponse(res).ConfigureAwait(false);
+            
             return true;
         }
         
-        private async Task<bool> HandleScheduleChangedRequest(HttpListenerRequest req)
+        private async Task<bool> HandleGetUserDataRequest(HttpListenerRequest req, HttpListenerResponse res)
         {
-            Debug.Log($"Received schedule changed webhook");
-            await Task.CompletedTask;
-            //MainThreadDispatcher.Post((action) => _signalBus.Fire(new ScheduleChangedWebhookSignal()), this);
-            return true;
-        }
-        
-        private async Task<bool> HandleSharedResourcesChangedRequest(HttpListenerRequest req)
-        {
-            Debug.Log($"Received shared resources changed webhook");
             try
             {
-                using (var inputStream = req.InputStream)
+                WebRequestExample.UserData data = new WebRequestExample.UserData
                 {
-                    byte[] buffer = new byte[req.ContentLength64];
-                    var read = await inputStream.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
-                    if (read < 1)
-                    {
-                        return false;
-                    }
-                    string jsonString = Encoding.UTF8.GetString(buffer, 0, read);
-                    //var signal = JsonConvert.DeserializeObject<SharedResourcesChangedWebhookSignal>(jsonString);
-                    //MainThreadDispatcher.Post((action) => _signalBus.Fire(signal), this);
-                }
+                    Name = "Artur",
+                    Email = "a.levchenko@visartech.com",
+                    Role = "Unity dev"
+                };
+                var content = JsonConvert.SerializeObject(data);
+                    
+                var buffer = Encoding.UTF8.GetBytes(content);
                 
+                res.StatusCode = 200;
+                res.ContentType = "application/json";
+                res.ContentEncoding = Encoding.UTF8;
+                res.ContentLength64 = buffer.LongLength;
+                
+                using (var stream = res.OutputStream)
+                {
+                    await stream.WriteAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
+                }
+
                 return true;
             }
             catch (Exception e)
@@ -151,13 +140,37 @@ namespace Networking.Webhooks
                 return false;
             }
         }
-        
-        private async Task<bool> HandleChestGamesChangedRequest(HttpListenerRequest req)
+
+        private async Task OkResponse(HttpListenerResponse resp)
         {
-            Debug.Log($"Received chest games changed webhook");
-            await Task.CompletedTask;
-            //MainThreadDispatcher.Post((action) => _signalBus.Fire(new ChestGamesChangedWebhookSignal()), this);
-            return true;
+            var data = Encoding.UTF8.GetBytes(SuccessResponse);
+            
+            resp.StatusCode = 200;
+            resp.ContentType = "application/json";
+            resp.ContentEncoding = Encoding.UTF8;
+            resp.ContentLength64 = data.LongLength;
+            
+            using (var stream = resp.OutputStream)
+            {
+                await stream.WriteAsync(data, 0, data.Length).ConfigureAwait(false);
+            }
+            
+        }
+
+        private async Task FailResponse(HttpListenerResponse resp)
+        {
+            var data = Encoding.UTF8.GetBytes(FailedResponse);
+            
+            resp.StatusCode = 421;
+            resp.ContentType = "application/json";
+            resp.ContentEncoding = Encoding.UTF8;
+            resp.ContentLength64 = data.LongLength;
+            
+            using (var stream = resp.OutputStream)
+            {
+                await stream.WriteAsync(data, 0, data.Length).ConfigureAwait(false);
+            }
+            
         }
     }
 }
