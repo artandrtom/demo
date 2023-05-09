@@ -34,9 +34,8 @@ namespace DefaultNamespace
                     }
                 }
             }
-
         }
-
+        
         private const float Amplitude = 2f;
         private const float Frequency = 0.5f;
         private static readonly Quaternion TargetRot = Quaternion.Euler(45f, 45f, 45f);
