@@ -10,11 +10,5 @@ namespace DefaultNamespace.MultipleUpdates
             transform.UpdatePositionAndRotation(Time.time);
         }
         
-        public void Rotate()
-        {
-            transform.Rotate(Vector3.up, Time.deltaTime * 150, Space.Self);
-        }
-        
-
     }
 }
