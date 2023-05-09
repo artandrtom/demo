@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using MEC;
+using Unity.Mathematics;
 using UnityEngine;
 
 namespace DefaultNamespace
@@ -50,9 +51,17 @@ namespace DefaultNamespace
         public static (Vector3 pos, Quaternion rot) CalculatePositionAndRotation(this Vector3 pos, float time)
         {
             var factor = Mathf.Sin(Frequency * pos.x + time) + Mathf.Cos(Frequency * pos.z + time);
-            float y = 0 + Amplitude * factor;
+            pos.y = 0 + Amplitude * factor;
             var rot = Quaternion.Slerp(Quaternion.identity, TargetRot, factor);
-            return (new Vector3(pos.x, y, pos.z), rot);
+            return (pos, rot);
+        }
+        
+        public static (float3 pos, quaternion rot) CalculatePositionAndRotationBurst(this float3 pos, float time)
+        {
+            var factor = math.sin(Frequency * pos.x + time) + math.cos(Frequency * pos.z + time);
+            pos.y = 0 + Amplitude * factor;
+            var rot = math.nlerp(quaternion.identity, quaternion.Euler(45f, 45f, 45f), factor);
+            return (pos, rot);
         }
     }
 }
