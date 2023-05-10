@@ -18,7 +18,7 @@ namespace DefaultNamespace.JobsUpdate
         [ReadOnly] 
         private TransformAccessArray _transformAccessArray;
 
-        private CubeUpdateJob _job;
+        private UpdateCubeTransformsJob _job;
         
         private JobHandle _jobHandle;
 
@@ -36,7 +36,7 @@ namespace DefaultNamespace.JobsUpdate
         private void Update()
         {
             var time = Time.time;
-            _job = new CubeUpdateJob(time);
+            _job = new UpdateCubeTransformsJob(time);
             _jobHandle = _job.Schedule(_transformAccessArray);
         }
 

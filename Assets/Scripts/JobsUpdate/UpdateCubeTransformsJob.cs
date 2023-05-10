@@ -1,12 +1,14 @@
-﻿using UnityEngine.Jobs;
+﻿using Unity.Burst;
+using UnityEngine.Jobs;
 
 namespace DefaultNamespace.JobsUpdate
 {
-    public readonly struct CubeUpdateJob : IJobParallelForTransform
+    //[BurstCompile]
+    public readonly struct UpdateCubeTransformsJob : IJobParallelForTransform
     {
         private readonly float _time;
 
-        public CubeUpdateJob(float time)
+        public UpdateCubeTransformsJob(float time)
         {
             _time = time;
         }
