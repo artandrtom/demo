@@ -55,7 +55,9 @@ namespace DefaultNamespace
             var rot = Quaternion.Slerp(Quaternion.identity, TargetRot, factor);
             return (pos, rot);
         }
-        
+
+        #region spoiler
+
         public static (float3 pos, quaternion rot) CalculatePositionAndRotationBurst(this float3 pos, float time)
         {
             var factor = math.sin(Frequency * pos.x + time) + math.cos(Frequency * pos.z + time);
@@ -63,5 +65,16 @@ namespace DefaultNamespace
             var rot = math.nlerp(quaternion.identity, quaternion.Euler(45f, 45f, 45f), factor);
             return (pos, rot);
         }
+        
+        public static (float3 pos, quaternion rot) CalculatePositionAndRotationBurst(this float3 pos, float amplitude, float frequency, float time)
+        {
+            var factor = math.sin(frequency * pos.x + time) + math.cos(Frequency * pos.z + time);
+            pos.y = 0 + amplitude * factor;
+            var rot = math.nlerp(quaternion.identity, quaternion.Euler(45f, 45f, 45f), factor);
+            return (pos, rot);
+        }
+
+        #endregion
+
     }
 }

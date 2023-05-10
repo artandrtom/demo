@@ -13,6 +13,11 @@ namespace DefaultNamespace.GpuInstancedJobs
         [SerializeField] private Material _material;
         [SerializeField] private Mesh _mesh;
 
+        [Range(0.1f, 5f)]
+        [SerializeField] private float _amplitude;
+        [Range(0.1f, 5f)]
+        [SerializeField] private float _frequency;
+        
         private RenderParams _rp;
         
         private NativeArray<float3> _positions;
@@ -38,7 +43,7 @@ namespace DefaultNamespace.GpuInstancedJobs
         private void Update()
         {
             var time = Time.time;
-            _job = new CalculateTrsJob(time, ref _positions, ref _matrices);
+            _job = new CalculateTrsJob(_amplitude, _frequency, time, ref _positions, ref _matrices);
             _jobHandle = _job.Schedule(_matrices.Length, 64);
         }
 
