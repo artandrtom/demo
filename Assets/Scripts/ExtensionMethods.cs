@@ -62,7 +62,7 @@ namespace DefaultNamespace
         {
             var factor = math.sin(Frequency * pos.x + time) + math.cos(Frequency * pos.z + time);
             pos.y = 0 + Amplitude * factor;
-            var rot = math.nlerp(quaternion.identity, quaternion.Euler(45f, 45f, 45f), factor);
+            var rot = math.slerp(quaternion.identity, quaternion.Euler(45f, 45f, 45f), factor);
             return (pos, rot);
         }
         
@@ -70,7 +70,7 @@ namespace DefaultNamespace
         {
             var factor = math.sin(frequency * pos.x + time) + math.cos(Frequency * pos.z + time);
             pos.y = 0 + amplitude * factor;
-            var rot = math.nlerp(quaternion.identity, quaternion.Euler(45f, 45f, 45f), factor);
+            var rot = math.slerp(quaternion.identity, quaternion.Euler(45f, 45f, 45f), factor);
             return (pos, rot);
         }
 
